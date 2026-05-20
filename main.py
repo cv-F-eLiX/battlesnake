@@ -11,6 +11,26 @@ import random
 import typing
 
 
+def collision_detection(game_state: typing.Dict) -> typing.Dict:
+    '''
+    collision_detection is called on every turn and returns a dictionary with the safe moves
+    '''
+    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
+    my_head = game_state["you"]["body"][0]  # Coordinates of your head
+    snakes = game_state['board']['snakes']
+    for snake in snakes:
+        for segment in snake['body']:
+            if (segment["x"] == my_head["x"] and segment["y"] == my_head["y"] + 1) or my_head["y"] == game_state['board']['height'] - 1:
+                is_move_safe["up"] = False
+            if (segment["x"] == my_head["x"] and segment["y"] == my_head["y"] - 1) or my_head["y"] == 0:
+                is_move_safe["down"] = False
+            if (segment["x"] == my_head["x"] + 1 and segment["y"] == my_head["y"]) or my_head["x"] == game_state['board']['width'] - 1:
+                is_move_safe["right"] = False
+            if (segment["x"] == my_head["x"] - 1 and segment["y"] == my_head["y"]) or my_head["x"] == 0:
+                is_move_safe["left"] = False
+    return is_move_safe
+
+
 def info() -> typing.Dict:
     '''
     info is called when you create your Battlesnake on play.battlesnake.com
@@ -59,61 +79,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     'you': {'id': 'gs_MpSb6B4FpxrRkqBTYPw66BJY', 'name': 'github', 'latency': '23', 'health': 86, 'body': [{'x': 0, 'y': 5}, {'x': 1, 'y': 5}, {'x': 2, 'y': 5}, {'x': 2, 'y': 4}, {'x': 2, 'y': 3}, {'x': 3, 'y': 3}], 'head': {'x': 0, 'y': 5}, 'length': 6, 'shout': '', 'squad': '', 'customizations': {'color': '#888888', 'head': 'default', 'tail': 'default'}}}
     '''
 
+    is_move_safe = collision_detection(game_state)
 
-    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
-
-    # We've included code to prevent your Battlesnake from moving backwards
-    my_head = game_state["you"]["body"][0]  # Coordinates of your head
-    my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
-
-    if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        is_move_safe["left"] = False
-
-    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
-        is_move_safe["right"] = False
-
-    elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        is_move_safe["down"] = False
-
-    elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        is_move_safe["up"] = False
-
-    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-    board_width = game_state['board']['width']
-    board_height = game_state['board']['height']
-    if my_head["x"] == 0:
-        is_move_safe["left"] = False
-    if my_head["x"] == board_width - 1:
-        is_move_safe["right"] = False
-    if my_head["y"] == 0:
-        is_move_safe["down"] = False
-    if my_head["y"] == board_height - 1:
-        is_move_safe["up"] = False
-
-    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-    '''my_body = game_state['you']['body']
-    for segment in my_body:
-        if segment["x"] == my_head["x"] and segment["y"] == my_head["y"] + 1:
-            is_move_safe["up"] = False
-        if segment["x"] == my_head["x"] and segment["y"] == my_head["y"] - 1:
-            is_move_safe["down"] = False
-        if segment["x"] == my_head["x"] + 1 and segment["y"] == my_head["y"]:
-            is_move_safe["right"] = False
-        if segment["x"] == my_head["x"] - 1 and segment["y"] == my_head["y"]:
-            is_move_safe["left"] = False'''
-
-    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    snakes = game_state['board']['snakes']
-    for snake in snakes:
-        for segment in snake['body']:
-            if segment["x"] == my_head["x"] and segment["y"] == my_head["y"] + 1:
-                is_move_safe["up"] = False
-            if segment["x"] == my_head["x"] and segment["y"] == my_head["y"] - 1:
-                is_move_safe["down"] = False
-            if segment["x"] == my_head["x"] + 1 and segment["y"] == my_head["y"]:
-                is_move_safe["right"] = False
-            if segment["x"] == my_head["x"] - 1 and segment["y"] == my_head["y"]:
-                is_move_safe["left"] = False
     # Are there any safe moves left?
     safe_moves = []
     for move, isSafe in is_move_safe.items():
