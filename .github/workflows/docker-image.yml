@@ -36,4 +36,8 @@ jobs:
           push: true
           # List of tags
           tags: ghcr.io/teammasse/battlesnake:latest
+          # List of external cache sources for buildx (e.g., user/app:cache, type=local,src=path/to/dir)
+          cache-from: type=gha
+          # List of cache export destinations for buildx (e.g., user/app:cache, type=local,dest=path/to/dir)
+          cache-to: type=gha,mode=max
                 
