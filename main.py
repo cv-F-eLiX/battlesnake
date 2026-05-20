@@ -58,7 +58,7 @@ def end(game_state: typing.Dict):
     '''
     end is called when your Battlesnake finishes a game and prints the reason why your Battlesnake lost or won
     '''
-    print(f"GAME END: {game_state['board']['snakes'][0]['name']} {game_state['board']['snakes'][0]['id']} - {game_state['board']['snakes'][0]['health']} - {game_state['board']['snakes'][0]['length']} - {game_state['board']['snakes'][0]['shout']} - {game_state['board']['snakes'][0]['squad']}")
+    print(f"GAME END: winner: {game_state['board']['snakes'][0]['name']} {game_state['board']['snakes'][0]['id']} with {game_state['board']['snakes'][0]['health']} health a length of {game_state['board']['snakes'][0]['length']} segments")
 
 
 def move(game_state: typing.Dict) -> typing.Dict:
