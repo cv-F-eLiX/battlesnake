@@ -14,6 +14,7 @@ import typing
 def collision_detection(game_state: typing.Dict) -> typing.Dict:
     '''
     collision_detection is called on every turn and returns a dictionary with the safe moves
+    first it checks if there is a collision with the wall or with any snake body, then it checks if there is a collision with any snake head in the next turn, if there is a collision with a snake head in the next turn, it marks the move as unsafe
     '''
     is_move_safe = {"up": True, "down": True, "left": True, "right": True}
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
