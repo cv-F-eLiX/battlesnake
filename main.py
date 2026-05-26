@@ -10,6 +10,12 @@
 import random
 import typing
 
+def food_distance(food: typing.Dict, head: typing.Dict) -> int:
+    '''
+    food_distance calculates the distance from the head to the food using the Manhattan distance formula
+    '''
+    return abs(food["x"] - head["x"]) + abs(food["y"] - head["y"])
+
 
 def collision_detection(game_state: typing.Dict) -> typing.Dict:
     '''
@@ -62,16 +68,25 @@ def choose_move(game_state: typing.Dict, safe_moves: list[str]) -> str:
 
     food = game_state['board']['food']
     my_head = game_state["you"]["body"][0]
-    for food_item in food:
-        if food_item["x"] == my_head["x"] and food_item["y"] == my_head["y"] + 1 and "up" in safe_moves:
-            return "up"
-        if food_item["x"] == my_head["x"] and food_item["y"] == my_head["y"] - 1 and "down" in safe_moves:
-            return "down"
-        if food_item["x"] == my_head["x"] + 1 and food_item["y"] == my_head["y"] and "right" in safe_moves:
-            return "right"
-        if food_item["x"] == my_head["x"] - 1 and food_item["y"] == my_head["y"] and "left" in safe_moves:
-            return "left"
-    return random.choice(safe_moves)
+    preferred_moves = []
+    min_distance = float('inf')
+    for move in preferred_moves:
+        if move == "up":
+            target = {"x": my_head["x"], "y": my_head["y"] + 1}
+        elif move == "down":
+            target = {"x": my_head["x"], "y": my_head["y"] - 1}
+        elif move == "right":
+            target = {"x": my_head["x"] + 1, "y": my_head["y"]}
+        else:  # move == "left"
+            target = {"x": my_head["x"] - 1, "y": my_head["y"]}
+        for food_item in food:
+            distance = food_distance(food_item, target)
+            if distance < min_distance:
+                min_distance = distance
+                preferred_moves= [move]
+            elif distance == min_distance:
+                preferred_moves.append(move)
+    return random.choice(preferred_moves)
 
 
 def info() -> typing.Dict:
