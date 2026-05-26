@@ -118,6 +118,7 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
         outcome = predict_game_state(choice_game_state, recursion_depth - 1)
         tries += outcome[0]
         alive += outcome[1]
+    print(f"Move: {first_move}, Tries: {tries}, Alive: {alive}")
     return alive / tries if tries > 0 else 0.0
 
 
@@ -203,7 +204,6 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
     preferred_moves = safe_moves.copy()           
     for move in safe_moves:
         score = predict_game_tree(small_game_state, 3, move)
-        print(f"Move: {move}, Score: {score}")
         if score > max_score:
             max_score = score
             preferred_moves = [move]
