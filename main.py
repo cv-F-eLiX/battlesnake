@@ -26,6 +26,7 @@ def collision_detection(game_state: typing.Dict) -> typing.Dict:
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
     snakes = game_state['board']['snakes']
     for snake in snakes:
+        # Check for collisions with the snake's body and the walls
         for segment in snake['body']:
             if (segment["x"] == my_head["x"] and segment["y"] == my_head["y"] + 1) or my_head["y"] == game_state['board']['height'] - 1:
                 is_move_safe["up"] = False
@@ -35,18 +36,25 @@ def collision_detection(game_state: typing.Dict) -> typing.Dict:
                 is_move_safe["right"] = False
             if (segment["x"] == my_head["x"] - 1 and segment["y"] == my_head["y"]) or my_head["x"] == 0:
                 is_move_safe["left"] = False
+                
+    # Try to not move into a position where the opponent can also move to.
+    is_move_very_safe = is_move_safe.copy()
+    for snake in snakes:
         head = snake['head']
         if head["x"] == my_head["x"] and head["y"] == my_head["y"]:
             continue
-        if (abs(head["x"] - my_head["x"]) == 1 and head["y"] == my_head["y"] + 1) or (head["x"] == my_head["x"] and head["y"] == my_head["y"] + 2):
-            is_move_safe["up"] = False
-        if (abs(head["x"] - my_head["x"]) == 1 and head["y"] == my_head["y"] - 1) or (head["x"] == my_head["x"] and head["y"] == my_head["y"] - 2):
-            is_move_safe["down"] = False
-        if (head["x"] == my_head["x"] + 1 and abs(head["y"] - my_head["y"]) == 1) or (head["x"] == my_head["x"] + 2 and head["y"] == my_head["y"]):
-            is_move_safe["right"] = False
-        if (head["x"] == my_head["x"] - 1 and abs(head["y"] - my_head["y"]) == 1) or (head["x"] == my_head["x"] - 2 and head["y"] == my_head["y"]):
-            is_move_safe["left"] = False
-    return is_move_safe
+        if is_move_very_safe["up"] and (abs(head["x"] - my_head["x"]) == 1 and head["y"] == my_head["y"] + 1) or (head["x"] == my_head["x"] and head["y"] == my_head["y"] + 2):
+            is_move_very_safe["up"] = False
+        if is_move_very_safe["down"] and (abs(head["x"] - my_head["x"]) == 1 and head["y"] == my_head["y"] - 1) or (head["x"] == my_head["x"] and head["y"] == my_head["y"] - 2):
+            is_move_very_safe["down"] = False
+        if is_move_very_safe["right"] and (head["x"] == my_head["x"] + 1 and abs(head["y"] - my_head["y"]) == 1) or (head["x"] == my_head["x"] + 2 and head["y"] == my_head["y"]):
+            is_move_very_safe["right"] = False
+        if is_move_very_safe["left"] and (head["x"] == my_head["x"] - 1 and abs(head["y"] - my_head["y"]) == 1) or (head["x"] == my_head["x"] - 2 and head["y"] == my_head["y"]):
+            is_move_very_safe["left"] = False
+        if is_move_very_safe["up"] == False and is_move_very_safe["right"] == False and is_move_very_safe["down"] == False and is_move_very_safe["left"] == False:
+            return is_move_safe
+            
+    return is_move_very_safe
 
 
 def choose_move(game_state: typing.Dict, safe_moves: list[str]) -> str:
