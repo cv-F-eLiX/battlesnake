@@ -12,25 +12,21 @@ import random
 import typing
 import itertools
 
-import time
 import sys
 import signal
 
-running = True
 
 def handle_sigterm(signum, frame):
-    '''Handle SIGTERM signal to allow for graceful and fast shutdown'''
-    global running
-    print("SIGTERM received")
-    running = False
+    '''Handle SIGTERM signal for a clean shutdown.'''
+    print("SIGTERM received: shutting down")
+    # Raise SystemExit to allow normal interpreter shutdown and cleanup
+    raise SystemExit(0)
 
+
+# Register the SIGTERM handler; if SIGTERM arrives the handler will
+# raise SystemExit and terminate the process cleanly. We don't busy-wait
+# here so importing the module or starting the server is not blocked.
 signal.signal(signal.SIGTERM, handle_sigterm)
-
-while running:
-    time.sleep(1)
-
-print("clean exit")
-sys.exit(0)
 
 
 def food_distance(food: typing.Dict, head: typing.Dict) -> int:
@@ -310,4 +306,9 @@ def move(game_state: typing.Dict) -> typing.Dict:
 if __name__ == "__main__":
     from server import run_server
 
-    run_server({"info": info, "start": start, "move": move, "end": end})
+    try:
+        run_server({"info": info, "start": start, "move": move, "end": end})
+    except SystemExit:
+        # Clean shutdown triggered by signal handler
+        print("clean exit")
+        sys.exit(0)
