@@ -46,6 +46,7 @@ def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> t
         # determine the safe moves for each snake so that we can predict the position of the snake heads in the next turn
         predicted_game_state = copy.deepcopy(small_game_state)
         safe_moves = {}
+        branching_snakes = []
         for snake in small_game_state['board']['snakes']:
             if distance(snake['head'], small_game_state['you']['head']) > 2*recursion_depth:
                 continue
@@ -55,6 +56,7 @@ def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> t
             for move, isSafe in is_move_safe.items():
                 if isSafe:
                     safe_moves[snake['id']].append(move)
+            branching_snakes.append(snake['id'])
             if len(safe_moves[snake['id']]) == 0 and snake['id'] == small_game_state['you']['id']:
                 # TODO: might want to return a different value instead of 1 here to indicate at which recursion depth we died
                 return (1, 0, 0)
@@ -67,8 +69,7 @@ def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> t
         # build choices as a list of complete move-sets (one move per snake)
         # each element is a dict mapping snake_id -> move
         choices = []
-        snake_ids = [snake['id']
-                     for snake in predicted_game_state['board']['snakes']]
+        snake_ids = [snake_id for snake_id in branching_snakes if safe_moves.get(snake_id)]
         moves_lists = [safe_moves.get(sid, []) for sid in snake_ids]
         # Cartesian product of moves for all snakes
         for combo in itertools.product(*moves_lists):
@@ -110,6 +111,7 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
     # determine the safe moves for each snake so that we can predict the position of the snake heads in the next turn
     predicted_game_state = copy.deepcopy(small_game_state)
     safe_moves = {}
+    branching_snakes = []
     for snake in small_game_state['board']['snakes']:
         if distance(snake['head'], small_game_state['you']['head']) > 2*recursion_depth:
             continue
@@ -119,6 +121,7 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
         for move, isSafe in is_move_safe.items():
             if isSafe:
                 safe_moves[snake['id']].append(move)
+        branching_snakes.append(snake['id'])
         if len(safe_moves[snake['id']]) == 0:
             predicted_game_state['board']['snakes'].remove(snake)
 
@@ -128,8 +131,7 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
     # build choices as a list of complete move-sets (one move per snake)
     # each element is a dict mapping snake_id -> move
     choices = []
-    snake_ids = [snake['id']
-                 for snake in predicted_game_state['board']['snakes']]
+    snake_ids = [snake_id for snake_id in branching_snakes if safe_moves.get(snake_id)]
     moves_lists = [safe_moves.get(sid, []) for sid in snake_ids]
     # Cartesian product of moves for all snakes
     for combo in itertools.product(*moves_lists):
