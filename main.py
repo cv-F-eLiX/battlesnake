@@ -215,12 +215,22 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
         print(
             f"MOVE {small_game_state['turn']}: No safe moves detected! Moving down")
         return "down"
-
-    '''food = small_game_state['board']['food']
-    my_head = small_game_state["you"]["body"][0]
+    
+    max_score = float('-inf')
     preferred_moves = safe_moves.copy()
-    min_distance = float('inf')
     for move in safe_moves:
+        score = predict_game_tree(small_game_state, 3, move)
+        if score > max_score:
+            max_score = score
+            preferred_moves = [move]
+        elif score == max_score:
+            preferred_moves.append(move)
+
+    food = small_game_state['board']['food']
+    my_head = small_game_state["you"]["body"][0]
+    hungry_moves = preferred_moves.copy()
+    min_distance = float('inf')
+    for move in preferred_moves:
         if move == "up":
             target = {"x": my_head["x"], "y": my_head["y"] + 1}
         elif move == "down":
@@ -233,21 +243,13 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
             distance = food_distance(food_item, target)
             if distance < min_distance:
                 min_distance = distance
-                preferred_moves= [move]
+                hungry_moves= [move]
             elif distance == min_distance:
-                preferred_moves.append(move)'''
+                hungry_moves.append(move)
 
-    max_score = float('-inf')
-    preferred_moves = safe_moves.copy()
-    for move in safe_moves:
-        score = predict_game_tree(small_game_state, 6, move)
-        if score > max_score:
-            max_score = score
-            preferred_moves = [move]
-        elif score == max_score:
-            preferred_moves.append(move)
+    
 
-    return random.choice(preferred_moves)
+    return random.choice(hungry_moves)
 
 
 def info() -> typing.Dict:
