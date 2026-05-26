@@ -79,12 +79,20 @@ def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> t
                 move = move_set.get(snake['id'])
                 if move == "up":
                     snake['head']['y'] += 1
+                    snake['body'].insert(0, copy.deepcopy(snake['head']))
+                    snake['body'].pop()
                 elif move == "down":
                     snake['head']['y'] -= 1
+                    snake['body'].insert(0, copy.deepcopy(snake['head']))
+                    snake['body'].pop()
                 elif move == "right":
                     snake['head']['x'] += 1
+                    snake['body'].insert(0, copy.deepcopy(snake['head']))
+                    snake['body'].pop()
                 elif move == "left":
                     snake['head']['x'] -= 1
+                    snake['body'].insert(0, copy.deepcopy(snake['head']))
+                    snake['body'].pop()
             outcome = predict_game_state(
                 choice_game_state, recursion_depth - 1)
             tries += outcome[0]
@@ -131,12 +139,20 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
             move = move_set.get(snake['id'])
             if move == "up":
                 snake['head']['y'] += 1
+                snake['body'].insert(0, copy.deepcopy(snake['head']))
+                snake['body'].pop()
             elif move == "down":
                 snake['head']['y'] -= 1
+                snake['body'].insert(0, copy.deepcopy(snake['head']))
+                snake['body'].pop()
             elif move == "right":
                 snake['head']['x'] += 1
+                snake['body'].insert(0, copy.deepcopy(snake['head']))
+                snake['body'].pop()
             elif move == "left":
                 snake['head']['x'] -= 1
+                snake['body'].insert(0, copy.deepcopy(snake['head']))
+                snake['body'].pop()
         outcome = predict_game_state(choice_game_state, recursion_depth - 1)
         tries += outcome[0]
         alive += outcome[1]
