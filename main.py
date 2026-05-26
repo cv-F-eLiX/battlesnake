@@ -17,15 +17,14 @@ import signal
 
 
 def handle_sigterm(signum, frame):
-    '''Handle SIGTERM signal for a clean shutdown.'''
+    '''
+    Handle SIGTERM signal for a clean shutdown.
+    '''
     print("SIGTERM received: shutting down")
     # Raise SystemExit to allow normal interpreter shutdown and cleanup
     raise SystemExit(0)
 
 
-# Register the SIGTERM handler; if SIGTERM arrives the handler will
-# raise SystemExit and terminate the process cleanly. We don't busy-wait
-# here so importing the module or starting the server is not blocked.
 signal.signal(signal.SIGTERM, handle_sigterm)
 
 
