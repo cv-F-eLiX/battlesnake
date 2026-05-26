@@ -264,7 +264,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     '''
     small_game_state = game_state.copy()
     small_game_state.pop("game")
-    small_game_state.pop("customizations")
+    for snake in small_game_state['board']['snakes']:
+        snake.pop("customizations")
     is_move_safe = collision_detection(small_game_state, game_state["you"]["head"])
 
     # Are there any safe moves left?
