@@ -241,7 +241,7 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
     max_score = float('-inf')
     preferred_moves = safe_moves.copy()
     for move in safe_moves:
-        score = predict_game_tree(small_game_state, 3, move)
+        score = predict_game_tree(small_game_state, 8, move)
         if score > max_score:
             max_score = score
             preferred_moves = [move]
