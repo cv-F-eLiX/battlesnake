@@ -1,5 +1,5 @@
 # Felix Kleindienst
-# Pascal Schadei
+# Pascal Schadei 224200286
 # Pauline Klingner
 # Robin Schneider
 # Theo Fischer 224200585
@@ -33,6 +33,22 @@ def distance(obj: typing.Dict, head: typing.Dict) -> int:
     distance calculates the distance from the head to an object using the Manhattan distance formula
     '''
     return abs(obj["x"] - head["x"]) + abs(obj["y"] - head["y"])
+
+def food_lead(small_game_state: typing.Dict) -> typing.Dict:
+    '''
+    food_lead returns a rating for every food how likely to reach against the closest snake
+    '''
+    advantage = {f : 0 for f in small_game_state['board']['food']}
+    for food in small_game_state['board']['food']:
+        # m_dist is the distance between the food and the closest snake
+        m_dist = 30
+        for snake in small_game_state['board']['snakes']:
+            if distance(food, snake['head']) < m_dist:
+                m_dist = distance(food, snake['head'])
+                
+        advantage[food] = m_dist - distance(food, small_game_state['you']['head'])
+
+    return  advantage
 
 
 def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> typing.Tuple[int, int, int]:
