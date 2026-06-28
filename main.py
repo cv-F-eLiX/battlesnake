@@ -1,5 +1,5 @@
 # Felix Kleindienst
-# Pascal Schadei
+# Pascal Schadei 224200286
 # Pauline Klingner
 # Robin Schneider
 # Theo Fischer 224200585
@@ -33,6 +33,33 @@ def distance(obj: typing.Dict, head: typing.Dict) -> int:
     distance calculates the distance from the head to an object using the Manhattan distance formula
     '''
     return abs(obj["x"] - head["x"]) + abs(obj["y"] - head["y"])
+
+def food_lead(small_game_state: typing.Dict) -> typing.Dict:
+    '''
+    food_lead returns a rating for every food how likely to reach against the snakes which are closer than us
+    '''
+    advantage = {f : 0 for f in small_game_state['board']['food']}
+    # which food is the closest to each snake and which the snake will likely priorities
+    prio = {snake : list(small_game_state['board']['food'][0]) for snake in small_game_state['board']['snakes']}
+
+    for snake in small_game_state['board']['snakes']:
+        for food in small_game_state['board']['food']:
+            if distance(food, snake['head']) < distance(prio[snake][0], snake['head']):
+                prio[snake] = list(food)
+            if distance(food, snake['head']) == distance(prio[snake][0], snake['head']):
+                prio[snake].append(food)
+
+    for food in small_game_state['board']['food']:
+        my_dist = distance(food, small_game_state['you']['head'])
+        for snake in small_game_state['board']['snakes']:
+            if distance(food, snake['head']) < my_dist:
+                if food in prio[snake]:
+                    # if the snake priorities the food is very bad
+                    advantage[food] -= 2*distance(food, snake['head'])
+                else:
+                    advantage[food] -= distance(food, snake['head'])
+
+    return  advantage
 
 
 def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> typing.Tuple[int, int, int]:
