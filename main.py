@@ -1,6 +1,6 @@
 # Felix Kleindienst
 # Pascal Schadei
-# Pauline Klingner
+# Pauline Klingner 224200061
 # Robin Schneider
 # Theo Fischer 224200585
 
@@ -34,6 +34,44 @@ def distance(obj: typing.Dict, head: typing.Dict) -> int:
     '''
     return abs(obj["x"] - head["x"]) + abs(obj["y"] - head["y"])
 
+def real_distance(small_game_state: typing.Dict, start: typing.Dict, target: typing.Dict) -> int:
+    '''
+    real_distance calculates the destance from the head to an object considering obstacles such as other snakes using the Breadth-First Search algorithm
+    '''
+    width = small_game_state['board']['width']
+    height = small_game_state['board']['hight']
+
+    obstacles = set()
+
+    # saves all snake segments in obstacles to know where it can not move to
+    for snake in small_game_state['board']['snakes']:
+        for segment in snake['body']:
+            obstacles.add((segment['x'], segment['y']))
+
+    # hypothetically next step with step count 0
+    queue = [(start['x'], start['y'], 0)]
+    visited = set([(start['x'], start['y'])])
+
+    while queue:
+        x, y, dist = queue.pop(0)
+        
+        # if there is the food
+        if x == target['x'] and y == target['y']:
+            return dist
+            
+        # check all neighbour spots
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, ny = x + dx, y + dy
+            
+            # is there a spot not visited
+            if 0 <= nx < width and 0 <= ny < height:
+                if (nx, ny) not in visited:
+                    # but the foodspot is allowde to step on 
+                    if (nx, ny) not in obstacles or (nx == target['x'] and ny == target['y']):
+                        visited.add((nx, ny))
+                        queue.append((nx, ny, dist + 1))
+                        
+    return float('inf')  # unreachable
 
 def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> typing.Tuple[int, int, int]:
     '''
@@ -246,27 +284,32 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
     my_head = small_game_state["you"]["body"][0]
     hungry_moves = preferred_moves.copy()
     min_distance = float('inf')
+    
     for move in preferred_moves:
+        # what is the hypothettically next step
         if move == "up":
             target = {"x": my_head["x"], "y": my_head["y"] + 1}
         elif move == "down":
             target = {"x": my_head["x"], "y": my_head["y"] - 1}
         elif move == "right":
             target = {"x": my_head["x"] + 1, "y": my_head["y"]}
-        else:  # move == "left"
+        else:  # "left"
             target = {"x": my_head["x"] - 1, "y": my_head["y"]}
+            
         for food_item in food:
-            food_distance = distance(food_item, target)
+            food_distance = real_distance(target, food_item, small_game_state)
+            
             if food_distance < min_distance:
                 min_distance = food_distance
-                hungry_moves= [move]
-            elif food_distance == min_distance:
+                hungry_moves = [move]
+            elif food_distance == min_distance and food_distance != float('inf'):
                 hungry_moves.append(move)
 
-    
+    # if all food is unreachable just make a random move
+    if min_distance == float('inf'):
+        return random.choice(preferred_moves)
 
     return random.choice(hungry_moves)
-
 
 def info() -> typing.Dict:
     '''
