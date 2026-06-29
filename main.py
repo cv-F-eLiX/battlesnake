@@ -36,17 +36,28 @@ def distance(obj: typing.Dict, head: typing.Dict) -> int:
 
 def food_lead(small_game_state: typing.Dict) -> typing.Dict:
     '''
-    food_lead returns a rating for every food how likely to reach against the closest snake
+    food_lead returns a rating for every food how likely to reach against the snakes which are closer than us
     '''
     advantage = {f : 0 for f in small_game_state['board']['food']}
+    # which food is the closest to each snake and which the snake will likely priorities
+    prio = {snake : list(small_game_state['board']['food'][0]) for snake in small_game_state['board']['snakes']}
+
+    for snake in small_game_state['board']['snakes']:
+        for food in small_game_state['board']['food']:
+            if distance(food, snake['head']) < distance(prio[snake][0], snake['head']):
+                prio[snake] = list(food)
+            if distance(food, snake['head']) == distance(prio[snake][0], snake['head']):
+                prio[snake].append(food)
+
     for food in small_game_state['board']['food']:
-        # m_dist is the distance between the food and the closest snake
-        m_dist = 30
+        my_dist = distance(food, small_game_state['you']['head'])
         for snake in small_game_state['board']['snakes']:
-            if distance(food, snake['head']) < m_dist:
-                m_dist = distance(food, snake['head'])
-                
-        advantage[food] = m_dist - distance(food, small_game_state['you']['head'])
+            if distance(food, snake['head']) < my_dist:
+                if food in prio[snake]:
+                    # if the snake priorities the food is very bad
+                    advantage[food] -= 2*distance(food, snake['head'])
+                else:
+                    advantage[food] -= distance(food, snake['head'])
 
     return  advantage
 
