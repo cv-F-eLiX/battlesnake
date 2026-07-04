@@ -1,13 +1,26 @@
+# Felix Kleindienst 224200362
+# Pascal Schadei 224200286
+# Pauline Klingner 224200061
+# Robin Schneider 224200414
+# Theo Fischer 224200585
+
+# running at
+# http://battlesnake.api64.de 
+
 import copy
 import random
 import typing
 import itertools
+import time
+from multiprocessing import Process, Queue
 
 import sys
 import signal
 
 import heapq
 
+# Queue in which computed moves need to be put for multiprocessing to work
+move_q = Queue()
 
 def handle_sigterm(signum, frame):
     '''
@@ -313,7 +326,7 @@ def collision_detection(small_game_state: typing.Dict, my_head: typing.Dict) -> 
 
 
 
-def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
+def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
     '''
     choose_move is called on every turn and returns the move that leads to food if there is food in the safe moves, otherwise it returns a random move from the safe moves
     '''
@@ -329,7 +342,8 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]) -> str:
     if len(safe_moves) == 0:
         print(
             f"MOVE {small_game_state['turn']}: No safe moves detected! Moving down")
-        return "down"
+        move_q.put("down")
+        return
 
     recursion_depth = 4
     close_snakes = 0
@@ -425,10 +439,14 @@ def move(game_state: typing.Dict) -> typing.Dict:
     'hazards': []}, 
     'you': {'id': 'gs_MpSb6B4FpxrRkqBTYPw66BJY', 'name': 'github', 'latency': '23', 'health': 86, 'body': [{'x': 0, 'y': 5}, {'x': 1, 'y': 5}, {'x': 2, 'y': 5}, {'x': 2, 'y': 4}, {'x': 2, 'y': 3}, {'x': 3, 'y': 3}], 'head': {'x': 0, 'y': 5}, 'length': 6, 'shout': '', 'squad': '', 'customizations': {'color': '#888888', 'head': 'default', 'tail': 'default'}}}
     '''
+    start = time.time()
+
     small_game_state = copy.deepcopy(game_state)
+    timeout = small_game_state["game"].pop("timeout")
     small_game_state.pop("game")
     for snake in small_game_state['board']['snakes']:
-        snake.pop("customizations", None)
+        snake.pop("customizations")
+
     is_move_safe = collision_detection(
         small_game_state, game_state["you"]["head"])
 
@@ -437,8 +455,31 @@ def move(game_state: typing.Dict) -> typing.Dict:
     for move, isSafe in is_move_safe.items():
         if isSafe:
             safe_moves.append(move)
+    
+    food_leads = food_lead(small_game_state)
 
-    next_move = choose_move(small_game_state, safe_moves)
+    # Do we have an advantage to any food items?
+    advantages = []
+    for lead in food_leads.items():
+        if lead > 0: 
+            advantages.append(lead)
+    
+    if not advantages:
+        p = Process(target=choose_move, args=(small_game_state, safe_moves))
+        p.start()
+    else: 
+        # Routing function no yet implemented, so a random save move will be chosen instead
+        next_move = random.choice(safe_moves)
+
+    # Wait until process finishes or timeout occurs
+    while(p.is_alive):
+        if time.time() >= timeout - 20: 
+            p.terminate()
+            p.join()
+    
+    next_move = move_q.get()
+    if not next_move: 
+        next_move = random.choice(safe_moves)
 
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
