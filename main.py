@@ -5,7 +5,7 @@
 # Theo Fischer 224200585
 
 # running at
-# http://battlesnake.api64.de
+# http://battlesnake.api64.de 
 
 import copy
 import random
@@ -16,6 +16,8 @@ from multiprocessing import Process, Queue
 
 import sys
 import signal
+
+import heapq
 
 # Queue in which computed moves need to be put for multiprocessing to work
 move_q = Queue()
@@ -37,6 +39,94 @@ def distance(obj: typing.Dict, head: typing.Dict) -> int:
     distance calculates the distance from the head to an object using the Manhattan distance formula
     '''
     return abs(obj["x"] - head["x"]) + abs(obj["y"] - head["y"])
+
+
+class PriorityQueue:
+    '''
+    help classes for a_star
+    '''
+    def __init__(self):
+        self.elements = []
+    
+    def empty(self) -> bool:
+        return not self.elements
+    
+    def put(self, item, priority):
+        heapq.heappush(self.elements, (priority, item))
+    
+    def get(self):
+        return heapq.heappop(self.elements)[1]
+
+
+def get_neighbors(pos: typing.Dict, board_width: int, board_height: int) -> list:
+    '''
+    get all theoreticly neightbors and returns them in a list
+    '''
+    neighbors = []
+    if pos["y"] < board_height - 1: neighbors.append({"x": pos["x"], "y": pos["y"] + 1}) # up
+    if pos["y"] > 0: neighbors.append({"x": pos["x"], "y": pos["y"] - 1})               # down
+    if pos["x"] < board_width - 1: neighbors.append({"x": pos["x"] + 1, "y": pos["y"]})  # right
+    if pos["x"] > 0: neighbors.append({"x": pos["x"] - 1, "y": pos["y"]})               # left
+    return neighbors
+
+
+def a_star_distance(start: typing.Dict, goal: typing.Dict, small_game_state: typing.Dict) -> int:
+    '''
+    calculation of the actual lenght of the path, using the a_star_algorithm
+    returns lenght of the path or float('inf'), if there is no path
+    '''
+    width = small_game_state['board']['width']
+    height = small_game_state['board']['height']
+    
+    # collecting blocked fields, t.ex. though other snakes
+    blocked = set()
+    for snake in small_game_state['board']['snakes']:
+        for segment in snake['body']:
+            blocked.add((segment['x'], segment['y']))
+
+    frontier = PriorityQueue()
+    frontier.put((start['x'], start['y']), 0)
+    
+    came_from = {}
+    cost_so_far = {}
+    start_tuple = (start['x'], start['y'])
+    came_from[start_tuple] = None
+    cost_so_far[start_tuple] = 0
+    
+    goal_tuple = (goal['x'], goal['y'])
+
+    while not frontier.empty():
+        current = frontier.get()
+        
+        if current == goal_tuple:
+            break
+            
+        current_dict = {"x": current[0], "y": current[1]}
+        for next_pos in get_neighbors(current_dict, width, height):
+            next_tuple = (next_pos['x'], next_pos['y'])
+            
+            # if the path is blocked, but not from a food piece
+            if next_tuple in blocked and next_tuple != goal_tuple:
+                continue
+                
+            new_cost = cost_so_far[current] + 1
+            if next_tuple not in cost_so_far or new_cost < cost_so_far[next_tuple]:
+                cost_so_far[next_tuple] = new_cost
+                priority = new_cost + abs(goal['x'] - next_pos['x']) + abs(goal['y'] - next_pos['y'])
+                frontier.put(next_tuple, priority)
+                came_from[next_tuple] = current
+
+    if goal_tuple in cost_so_far:
+        return cost_so_far[goal_tuple]
+    return float('inf')
+
+
+def distance(obj: typing.Dict, head: typing.Dict) -> int:
+    '''
+    distance calculates the distance from the head to an object using the Manhattan distance formula
+    '''
+    return abs(obj["x"] - head["x"]) + abs(obj["y"] - head["y"])
+
 
 def food_lead(small_game_state: typing.Dict) -> typing.Dict:
     '''
@@ -65,44 +155,6 @@ def food_lead(small_game_state: typing.Dict) -> typing.Dict:
 
     return  advantage
 
-def real_distance(small_game_state: typing.Dict, start: typing.Dict, target: typing.Dict) -> int:
-    '''
-    real_distance calculates the destance from the head to an object considering obstacles such as other snakes using the Breadth-First Search algorithm
-    '''
-    width = small_game_state['board']['width']
-    height = small_game_state['board']['hight']
-
-    obstacles = set()
-
-    # saves all snake segments in obstacles to know where it can not move to
-    for snake in small_game_state['board']['snakes']:
-        for segment in snake['body']:
-            obstacles.add((segment['x'], segment['y']))
-
-    # hypothetically next step with step count 0
-    queue = [(start['x'], start['y'], 0)]
-    visited = set([(start['x'], start['y'])])
-
-    while queue:
-        x, y, dist = queue.pop(0)
-        
-        # if there is the food
-        if x == target['x'] and y == target['y']:
-            return dist
-            
-        # check all neighbour spots
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nx, ny = x + dx, y + dy
-            
-            # is there a spot not visited
-            if 0 <= nx < width and 0 <= ny < height:
-                if (nx, ny) not in visited:
-                    # but the foodspot is allowde to step on 
-                    if (nx, ny) not in obstacles or (nx == target['x'] and ny == target['y']):
-                        visited.add((nx, ny))
-                        queue.append((nx, ny, dist + 1))
-                        
-    return float('inf')  # unreachable
 
 def predict_game_state(small_game_state: typing.Dict, recursion_depth: int) -> typing.Tuple[int, int, int]:
     '''
@@ -196,7 +248,7 @@ def predict_game_tree(small_game_state: typing.Dict, recursion_depth: int, first
 
     for snake in predicted_game_state['board']['snakes']:
         snake['body'].pop()  # remove tail segment to simulate movement
-       
+
     # build choices as a list of complete move-sets (one move per snake)
     # each element is a dict mapping snake_id -> move
     choices = []
@@ -272,6 +324,8 @@ def collision_detection(small_game_state: typing.Dict, my_head: typing.Dict) -> 
     return is_move_very_safe
 
 
+
+
 def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
     '''
     choose_move is called on every turn and returns the move that leads to food if there is food in the safe moves, otherwise it returns a random move from the safe moves
@@ -290,7 +344,7 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
             f"MOVE {small_game_state['turn']}: No safe moves detected! Moving down")
         move_q.put("down")
         return
-    
+
     recursion_depth = 4
     close_snakes = 0
     for snake in small_game_state['board']['snakes']:
@@ -300,8 +354,8 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
         recursion_depth = 3
     if close_snakes >= 2:
         recursion_depth = 2
-    
-    
+
+
     max_score = float('-inf')
     preferred_moves = safe_moves.copy()
     for move in safe_moves:
@@ -316,9 +370,8 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
     my_head = small_game_state["you"]["body"][0]
     hungry_moves = preferred_moves.copy()
     min_distance = float('inf')
-    
+
     for move in preferred_moves:
-        # what is the hypothettically next step
         if move == "up":
             target = {"x": my_head["x"], "y": my_head["y"] + 1}
         elif move == "down":
@@ -327,23 +380,17 @@ def choose_move(small_game_state: typing.Dict, safe_moves: list[str]):
             target = {"x": my_head["x"] + 1, "y": my_head["y"]}
         else:  # "left"
             target = {"x": my_head["x"] - 1, "y": my_head["y"]}
-            
+
         for food_item in food:
-            food_distance = real_distance(target, food_item, small_game_state)
-            
+            food_distance = a_star_distance(target, food_item, small_game_state)
+
             if food_distance < min_distance:
                 min_distance = food_distance
                 hungry_moves = [move]
-            elif food_distance == min_distance and food_distance != float('inf'):
+            elif food_distance == min_distance:
                 hungry_moves.append(move)
 
-    # if all food is unreachable just make a random move
-    if min_distance == float('inf'):
-        move_q.put(random.choice(preferred_moves))
-        return
-
-    move_q.put(random.choice(hungry_moves))
-    return
+    return random.choice(hungry_moves)
 
 def info() -> typing.Dict:
     '''
@@ -447,4 +494,4 @@ if __name__ == "__main__":
     except SystemExit:
         # Clean shutdown triggered by signal handler
         print("clean exit")
-        sys.exit(0)
+        sys.exit(0)  
